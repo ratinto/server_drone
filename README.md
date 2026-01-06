@@ -2,31 +2,33 @@
 
 A server application for managing drone detection and delivery coordinates. This system allows detection drones to store person coordinates and delivery drones to retrieve and deliver packages to those locations.
 
+## 🌐 Live API
+**Production URL:** https://server-drone.vercel.app/
+
 ## Prerequisites
 
 - Node.js (v14 or higher)
-- MySQL Server running on localhost:3306
-- MySQL root user with password 'root'
+- MySQL Server (for local development)
 
 ## Database Configuration
 
-The application uses MySQL with the following credentials:
-- **Host**: localhost
-- **Port**: 3306
-- **Database**: server_drone
-- **Username**: root
-- **Password**: root
+The application uses MySQL database (configured via DATABASE_URL environment variable).
 
-## Getting Started
+## Getting Started (Local Development)
 
 1. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Make sure MySQL is running and accessible with root/root credentials
+2. Set up your environment variables in `.env`:
+```
+DATABASE_URL="your-mysql-connection-string"
+PORT=3000
+NODE_ENV=development
+```
 
-3. Set up the database (Prisma will create the database automatically):
+3. Set up the database:
 ```bash
 npm run prisma:migrate
 ```
@@ -41,7 +43,7 @@ npm run prisma:generate
 npm run dev
 ```
 
-The server will start on http://localhost:3000
+The local server will start on http://localhost:3000
 
 ## API Endpoints
 

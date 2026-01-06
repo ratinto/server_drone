@@ -18,6 +18,7 @@ app.get('/', (req, res) => {
   res.json({
     message: 'Drone Delivery Server API',
     description: 'Manages coordinates for drone detection and delivery system',
+    production_url: 'https://server-drone.vercel.app',
     endpoints: {
       coordinates: '/api/coordinates',
       unvisited: '/api/coordinates/status/unvisited',
@@ -40,5 +41,9 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  const isProduction = process.env.NODE_ENV === 'production';
+  const serverUrl = isProduction 
+    ? 'https://server-drone.vercel.app' 
+    : `http://localhost:${PORT}`;
+  console.log(`🚀 Server is running on ${serverUrl}`);
 });
