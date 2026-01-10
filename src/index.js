@@ -45,10 +45,13 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, () => {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const serverUrl = isProduction 
-    ? 'https://server-drone.vercel.app' 
-    : `http://localhost:${PORT}`;
-  console.log(`🚀 Server is running on ${serverUrl}`);
-});
+// Export for Vercel serverless
+export default app;
+
+// Only start server if not in serverless environment
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  });
+}

@@ -8,6 +8,7 @@
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
     "build": "prisma generate",
+    "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
@@ -22,11 +23,11 @@
   "dependencies": {
     "@prisma/client": "^6.19.1",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "mysql2": "^3.16.0",
     "prisma": "^6.19.1"
   },
   "devDependencies": {
-    "dotenv": "^17.2.3"
   }
 }
