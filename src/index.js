@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import coordinatesRouter from './routes/coordinates.js';
+import telemetryRouter from './routes/telemetry.js';
 
 dotenv.config();
 
@@ -17,17 +18,21 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/', (req, res) => {
   res.json({
     message: 'Drone Delivery Server API',
-    description: 'Manages coordinates for drone detection and delivery system',
+    description: 'Manages coordinates for drone detection and delivery system, and telemetry data from Pixhawk',
     production_url: 'https://server-drone.vercel.app',
     endpoints: {
       coordinates: '/api/coordinates',
       unvisited: '/api/coordinates/status/unvisited',
       pending: '/api/coordinates/status/pending',
+      telemetry: '/api/telemetry',
+      latestTelemetry: '/api/telemetry/latest?droneId=<droneId>',
+      telemetryStats: '/api/telemetry/stats/<droneId>',
     },
   });
 });
 
 app.use('/api/coordinates', coordinatesRouter);
+app.use('/api/telemetry', telemetryRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

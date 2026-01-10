@@ -93,10 +93,74 @@ Mark a coordinate as delivered (automatically marks as visited too).
 
 ## Workflow
 
+### Coordinates Workflow
 1. **Detection Drone** detects a person → POST coordinates to `/api/coordinates`
 2. **Delivery Drone** queries unvisited locations → GET `/api/coordinates/status/unvisited`
 3. **Delivery Drone** arrives at location → PATCH `/api/coordinates/:id/visited`
 4. **Delivery Drone** completes delivery → PATCH `/api/coordinates/:id/delivered`
+
+### Telemetry Workflow
+1. **Raspberry Pi** reads data from Pixhawk
+2. **Raspberry Pi** sends telemetry → POST to `/api/telemetry`
+3. **Ground Control** monitors drone → GET `/api/telemetry/latest?droneId=drone_01`
+4. **Analytics** views statistics → GET `/api/telemetry/stats/drone_01`
+
+## 📊 Telemetry Management
+
+### Store Telemetry Data
+**POST** `/api/telemetry`
+
+Send telemetry data from Raspberry Pi/Pixhawk.
+
+```json
+{
+  "droneId": "drone_01",
+  "latitude": 37.7749,
+  "longitude": -122.4194,
+  "altitude": 100.5,
+  "heading": 45.5,
+  "groundSpeed": 5.2,
+  "verticalSpeed": 0.5,
+  "batteryLevel": 85.5,
+  "voltage": 12.6,
+  "current": 15.3,
+  "gpsFixType": 3,
+  "satelliteCount": 12,
+  "flightMode": "GUIDED",
+  "armed": true
+}
+```
+
+### Get All Telemetry
+**GET** `/api/telemetry`
+
+Query parameters:
+- `droneId` (optional): Filter by drone ID
+- `limit` (optional): Number of records to return (default: 100)
+- `startDate` (optional): Filter from this date
+- `endDate` (optional): Filter until this date
+
+### Get Latest Telemetry
+**GET** `/api/telemetry/latest?droneId=drone_01`
+
+Get the most recent telemetry data for a specific drone.
+
+### Get Telemetry Statistics
+**GET** `/api/telemetry/stats/:droneId`
+
+Query parameters:
+- `hours` (optional): Time period in hours (default: 24)
+
+Returns statistics like average battery level, altitude, speed, etc.
+
+### Get Single Telemetry
+**GET** `/api/telemetry/:id`
+
+### Cleanup Old Data
+**DELETE** `/api/telemetry/cleanup`
+
+Query parameters:
+- `days` (optional): Delete data older than X days (default: 30)
 
 ## Scripts
 
@@ -119,28 +183,23 @@ Mark a coordinate as delivered (automatically marks as visited too).
 - updatedAt: DateTime
 ```
 
-
-## API Endpoints
-
-### Users
-- `GET /api/users` - Get all users
-- `GET /api/users/:id` - Get user by ID
-- `POST /api/users` - Create a new user
-- `PUT /api/users/:id` - Update a user
-- `DELETE /api/users/:id` - Delete a user
-
-### Posts
-- `GET /api/posts` - Get all posts
-- `GET /api/posts/:id` - Get post by ID
-- `POST /api/posts` - Create a new post
-- `PUT /api/posts/:id` - Update a post
-- `DELETE /api/posts/:id` - Delete a post
-
-## Scripts
-
-- `npm run dev` - Start development server with watch mode
-- `npm start` - Start production server
-- `npm run prisma:migrate` - Run database migrations
-- `npm run prisma:generate` - Generate Prisma Client
-- `npm run prisma:studio` - Open Prisma Studio
-# server_drone
+### Telemetry Model
+```
+- id: Integer (Primary Key)
+- droneId: String (optional)
+- latitude: Float
+- longitude: Float
+- altitude: Float
+- heading: Float (optional)
+- groundSpeed: Float (optional)
+- verticalSpeed: Float (optional)
+- batteryLevel: Float (optional)
+- voltage: Float (optional)
+- current: Float (optional)
+- gpsFixType: Integer (optional)
+- satelliteCount: Integer (optional)
+- flightMode: String (optional)
+- armed: Boolean
+- timestamp: DateTime
+- createdAt: DateTime
+```

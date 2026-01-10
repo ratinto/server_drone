@@ -5,6 +5,10 @@
 **Production API:** https://server-drone.vercel.app/
 **Local API:** http://localhost:3000/ (for development)
 
+> **Note:** For detailed telemetry API examples, see [TELEMETRY_API.md](TELEMETRY_API.md)
+
+## 📍 Coordinates API
+
 ### 1. Store Coordinates (Detection Drone)
 ```bash
 curl -X POST https://server-drone.vercel.app/api/coordinates \
