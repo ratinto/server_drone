@@ -238,6 +238,147 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// PUT - Update telemetry data by ID
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      droneId,
+      latitude,
+      longitude,
+      altitude,
+      heading,
+      groundSpeed,
+      verticalSpeed,
+      batteryLevel,
+      voltage,
+      current,
+      gpsFixType,
+      satelliteCount,
+      flightMode,
+      armed,
+      timestamp
+    } = req.body;
+    
+    // Build update data object with only provided fields
+    const updateData = {};
+    if (droneId !== undefined) updateData.droneId = droneId;
+    if (latitude !== undefined) updateData.latitude = parseFloat(latitude);
+    if (longitude !== undefined) updateData.longitude = parseFloat(longitude);
+    if (altitude !== undefined) updateData.altitude = parseFloat(altitude);
+    if (heading !== undefined) updateData.heading = parseFloat(heading);
+    if (groundSpeed !== undefined) updateData.groundSpeed = parseFloat(groundSpeed);
+    if (verticalSpeed !== undefined) updateData.verticalSpeed = parseFloat(verticalSpeed);
+    if (batteryLevel !== undefined) updateData.batteryLevel = parseFloat(batteryLevel);
+    if (voltage !== undefined) updateData.voltage = parseFloat(voltage);
+    if (current !== undefined) updateData.current = parseFloat(current);
+    if (gpsFixType !== undefined) updateData.gpsFixType = parseInt(gpsFixType);
+    if (satelliteCount !== undefined) updateData.satelliteCount = parseInt(satelliteCount);
+    if (flightMode !== undefined) updateData.flightMode = flightMode;
+    if (armed !== undefined) updateData.armed = Boolean(armed);
+    if (timestamp !== undefined) updateData.timestamp = new Date(timestamp);
+    
+    const telemetry = await prisma.telemetry.update({
+      where: { id: parseInt(id) },
+      data: updateData,
+    });
+    
+    res.json({
+      success: true,
+      message: 'Telemetry data updated successfully',
+      data: telemetry
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Telemetry data not found' });
+    }
+    console.error('Error updating telemetry:', error);
+    res.status(500).json({ 
+      error: 'Failed to update telemetry data',
+      details: error.message 
+    });
+  }
+});
+
+// PATCH - Partially update telemetry data by ID
+router.patch('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateFields = req.body;
+    
+    // Build update data object
+    const updateData = {};
+    
+    // Process each field if provided
+    if (updateFields.droneId !== undefined) updateData.droneId = updateFields.droneId;
+    if (updateFields.latitude !== undefined) updateData.latitude = parseFloat(updateFields.latitude);
+    if (updateFields.longitude !== undefined) updateData.longitude = parseFloat(updateFields.longitude);
+    if (updateFields.altitude !== undefined) updateData.altitude = parseFloat(updateFields.altitude);
+    if (updateFields.heading !== undefined) updateData.heading = parseFloat(updateFields.heading);
+    if (updateFields.groundSpeed !== undefined) updateData.groundSpeed = parseFloat(updateFields.groundSpeed);
+    if (updateFields.verticalSpeed !== undefined) updateData.verticalSpeed = parseFloat(updateFields.verticalSpeed);
+    if (updateFields.batteryLevel !== undefined) updateData.batteryLevel = parseFloat(updateFields.batteryLevel);
+    if (updateFields.voltage !== undefined) updateData.voltage = parseFloat(updateFields.voltage);
+    if (updateFields.current !== undefined) updateData.current = parseFloat(updateFields.current);
+    if (updateFields.gpsFixType !== undefined) updateData.gpsFixType = parseInt(updateFields.gpsFixType);
+    if (updateFields.satelliteCount !== undefined) updateData.satelliteCount = parseInt(updateFields.satelliteCount);
+    if (updateFields.flightMode !== undefined) updateData.flightMode = updateFields.flightMode;
+    if (updateFields.armed !== undefined) updateData.armed = Boolean(updateFields.armed);
+    if (updateFields.timestamp !== undefined) updateData.timestamp = new Date(updateFields.timestamp);
+    
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ 
+        error: 'No valid fields provided for update' 
+      });
+    }
+    
+    const telemetry = await prisma.telemetry.update({
+      where: { id: parseInt(id) },
+      data: updateData,
+    });
+    
+    res.json({
+      success: true,
+      message: 'Telemetry data partially updated successfully',
+      data: telemetry
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Telemetry data not found' });
+    }
+    console.error('Error updating telemetry:', error);
+    res.status(500).json({ 
+      error: 'Failed to update telemetry data',
+      details: error.message 
+    });
+  }
+});
+
+// DELETE - Delete specific telemetry by ID
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    await prisma.telemetry.delete({
+      where: { id: parseInt(id) },
+    });
+    
+    res.json({
+      success: true,
+      message: 'Telemetry data deleted successfully'
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Telemetry data not found' });
+    }
+    console.error('Error deleting telemetry:', error);
+    res.status(500).json({ 
+      error: 'Failed to delete telemetry data',
+      details: error.message 
+    });
+  }
+});
+
 // DELETE - Delete old telemetry data (cleanup)
 router.delete('/cleanup', async (req, res) => {
   try {

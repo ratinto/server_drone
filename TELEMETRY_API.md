@@ -72,14 +72,57 @@ curl "https://server-drone.vercel.app/api/telemetry?droneId=drone_01&startDate=2
 curl https://server-drone.vercel.app/api/telemetry/1
 ```
 
+## ✏️ Update Telemetry Data
+
+### 9. Update Complete Telemetry Record (PUT)
+```bash
+curl -X PUT https://server-drone.vercel.app/api/telemetry/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "droneId": "drone_01",
+    "latitude": 37.7850,
+    "longitude": -122.4195,
+    "altitude": 105.0,
+    "batteryLevel": 80.0,
+    "flightMode": "AUTO",
+    "armed": true
+  }'
+```
+
+### 10. Partially Update Telemetry Record (PATCH)
+```bash
+# Update only battery level
+curl -X PATCH https://server-drone.vercel.app/api/telemetry/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "batteryLevel": 75.5
+  }'
+```
+
+```bash
+# Update multiple fields
+curl -X PATCH https://server-drone.vercel.app/api/telemetry/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "altitude": 110.5,
+    "groundSpeed": 6.0,
+    "flightMode": "GUIDED"
+  }'
+```
+
+### 11. Delete Specific Telemetry Record
+```bash
+curl -X DELETE https://server-drone.vercel.app/api/telemetry/1
+```
+
 ## 📊 Statistics and Analytics
 
-### 9. Get Telemetry Statistics (Last 24 hours)
+### 12. Get Telemetry Statistics (Last 24 hours)
 ```bash
 curl https://server-drone.vercel.app/api/telemetry/stats/drone_01
 ```
 
-### 10. Get Statistics for Custom Time Period
+### 13. Get Statistics for Custom Time Period
 ```bash
 # Last 48 hours
 curl https://server-drone.vercel.app/api/telemetry/stats/drone_01?hours=48
@@ -90,12 +133,12 @@ curl https://server-drone.vercel.app/api/telemetry/stats/drone_01?hours=168
 
 ## 🧹 Data Cleanup
 
-### 11. Delete Old Telemetry Data (30 days)
+### 14. Delete Old Telemetry Data (30 days)
 ```bash
 curl -X DELETE https://server-drone.vercel.app/api/telemetry/cleanup
 ```
 
-### 12. Delete Data Older Than 7 Days
+### 15. Delete Data Older Than 7 Days
 ```bash
 curl -X DELETE https://server-drone.vercel.app/api/telemetry/cleanup?days=7
 ```
@@ -116,8 +159,10 @@ vehicle = connect('/dev/ttyAMA0', wait_ready=True, baud=57600)
 
 API_URL = "https://server-drone.vercel.app/api/telemetry"
 DRONE_ID = "drone_01"
+current_telemetry_id = None
 
 def send_telemetry():
+    global current_telemetry_id
     try:
         telemetry_data = {
             "droneId": DRONE_ID,
@@ -139,17 +184,39 @@ def send_telemetry():
         response = requests.post(API_URL, json=telemetry_data, timeout=5)
         
         if response.status_code == 201:
-            print(f"✓ Telemetry sent successfully")
+            result = response.json()
+            current_telemetry_id = result['data']['id']
+            print(f"✓ Telemetry sent successfully (ID: {current_telemetry_id})")
         else:
             print(f"✗ Error: {response.status_code} - {response.text}")
             
     except Exception as e:
         print(f"✗ Exception: {e}")
 
+def update_telemetry(telemetry_id, updates):
+    """Update specific fields of existing telemetry"""
+    try:
+        url = f"{API_URL}/{telemetry_id}"
+        response = requests.patch(url, json=updates, timeout=5)
+        
+        if response.status_code == 200:
+            print(f"✓ Telemetry {telemetry_id} updated successfully")
+        else:
+            print(f"✗ Update Error: {response.status_code} - {response.text}")
+            
+    except Exception as e:
+        print(f"✗ Update Exception: {e}")
+
 # Send telemetry every 2 seconds
 while True:
     send_telemetry()
     time.sleep(2)
+    
+    # Example: Update battery level after 10 seconds
+    # if current_telemetry_id:
+    #     update_telemetry(current_telemetry_id, {
+    #         "batteryLevel": vehicle.battery.level
+    #     })
 ```
 
 ---

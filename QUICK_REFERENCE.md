@@ -26,6 +26,9 @@
 | POST | `/api/telemetry` | Send telemetry data from Raspberry Pi |
 | GET | `/api/telemetry` | Get all telemetry data |
 | GET | `/api/telemetry/:id` | Get specific telemetry record |
+| PUT | `/api/telemetry/:id` | Update complete telemetry record |
+| PATCH | `/api/telemetry/:id` | Partially update telemetry record |
+| DELETE | `/api/telemetry/:id` | Delete specific telemetry record |
 | GET | `/api/telemetry/latest?droneId=X` | Get latest telemetry for drone |
 | GET | `/api/telemetry/stats/:droneId` | Get statistics for drone |
 | DELETE | `/api/telemetry/cleanup` | Cleanup old telemetry data |
@@ -67,6 +70,14 @@ curl -X POST https://server-drone.vercel.app/api/coordinates \
 ### Get Unvisited Locations
 ```bash
 curl https://server-drone.vercel.app/api/coordinates/status/unvisited
+```
+
+### Update Telemetry Data
+```bash
+# Update only specific fields
+curl -X PATCH https://server-drone.vercel.app/api/telemetry/1 \
+  -H "Content-Type: application/json" \
+  -d '{"batteryLevel": 75.5, "altitude": 110.0}'
 ```
 
 ---

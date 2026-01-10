@@ -156,6 +156,22 @@ Returns statistics like average battery level, altitude, speed, etc.
 ### Get Single Telemetry
 **GET** `/api/telemetry/:id`
 
+### Update Telemetry Data
+**PUT** `/api/telemetry/:id` - Complete update
+
+**PATCH** `/api/telemetry/:id` - Partial update (update only specific fields)
+
+Example:
+```json
+{
+  "batteryLevel": 75.5,
+  "altitude": 110.0
+}
+```
+
+### Delete Telemetry
+**DELETE** `/api/telemetry/:id` - Delete specific telemetry record
+
 ### Cleanup Old Data
 **DELETE** `/api/telemetry/cleanup`
 
