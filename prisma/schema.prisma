@@ -43,3 +43,18 @@ model Telemetry {
   @@index([droneId])
   @@index([timestamp])
 }
+
+model DroneCommand {
+  id          Int      @id @default(autoincrement())
+  droneId     String   // Drone identifier
+  command     String   // ARM, DISARM, RTL, LAND, TAKEOFF, GOTO, etc.
+  parameters  Json?    // Optional parameters (e.g., altitude for TAKEOFF, coordinates for GOTO)
+  status      String   @default("PENDING") // PENDING, EXECUTING, COMPLETED, FAILED
+  result      Json?    // Result/error message after execution
+  createdAt   DateTime @default(now())
+  executedAt  DateTime?
+  
+  @@index([droneId])
+  @@index([status])
+  @@index([createdAt])
+}
