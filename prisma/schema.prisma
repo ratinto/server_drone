@@ -15,46 +15,13 @@ model Coordinates {
   id          Int      @id @default(autoincrement())
   latitude    Float
   longitude   Float
+  altitude    Float?   // Optional altitude from Pixhawk
+  timestamp   DateTime @default(now()) // Actual timestamp from Pixhawk GPS
   isVisited   Boolean  @default(false)
   isDelivered Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-}
-
-model Telemetry {
-  id            Int      @id @default(autoincrement())
-  droneId       String?  // Optional identifier for the drone
-  latitude      Float
-  longitude     Float
-  altitude      Float    // in meters
-  heading       Float?   // in degrees (0-360)
-  groundSpeed   Float?   // in m/s
-  verticalSpeed Float?   // in m/s
-  batteryLevel  Float?   // percentage (0-100)
-  voltage       Float?   // in volts
-  current       Float?   // in amps
-  gpsFixType    Int?     // GPS fix type (0=no fix, 2=2D, 3=3D)
-  satelliteCount Int?    // number of satellites
-  flightMode    String?  // flight mode (e.g., STABILIZE, GUIDED, AUTO)
-  armed         Boolean  @default(false)
-  timestamp     DateTime @default(now())
-  createdAt     DateTime @default(now())
   
-  @@index([droneId])
   @@index([timestamp])
 }
 
-model DroneCommand {
-  id          Int      @id @default(autoincrement())
-  droneId     String   // Drone identifier
-  command     String   // ARM, DISARM, RTL, LAND, TAKEOFF, GOTO, etc.
-  parameters  Json?    // Optional parameters (e.g., altitude for TAKEOFF, coordinates for GOTO)
-  status      String   @default("PENDING") // PENDING, EXECUTING, COMPLETED, FAILED
-  result      Json?    // Result/error message after execution
-  createdAt   DateTime @default(now())
-  executedAt  DateTime?
-  
-  @@index([droneId])
-  @@index([status])
-  @@index([createdAt])
-}

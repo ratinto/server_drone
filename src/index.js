@@ -2,8 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import coordinatesRouter from './routes/coordinates.js';
-import telemetryRouter from './routes/telemetry.js';
-import commandsRouter from './routes/commands.js';
 
 dotenv.config();
 
@@ -19,30 +17,21 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/', (req, res) => {
   res.json({
     message: 'Drone Delivery Server API',
-    description: 'Manages coordinates for drone detection and delivery system, telemetry data from Pixhawk, and drone control commands',
+    description: 'Manages coordinates for drone detection and delivery system with GPS batch upload support',
     production_url: 'https://server-drone.vercel.app',
     endpoints: {
-      coordinates: '/api/coordinates',
-      unvisited: '/api/coordinates/status/unvisited',
-      pending: '/api/coordinates/status/pending',
-      telemetry: '/api/telemetry',
-      latestTelemetry: '/api/telemetry/latest?droneId=<droneId>',
-      telemetryStats: '/api/telemetry/stats/<droneId>',
-      commands: '/api/commands',
-      armDrone: '/api/commands/arm',
-      disarmDrone: '/api/commands/disarm',
-      rtl: '/api/commands/rtl',
-      land: '/api/commands/land',
-      takeoff: '/api/commands/takeoff',
-      goto: '/api/commands/goto',
-      pendingCommands: '/api/commands/pending/<droneId>',
+      createCoordinate: 'POST /api/coordinates',
+      batchUpload: 'POST /api/coordinates/trigger-upload (For Raspberry Pi)',
+      allCoordinates: 'GET /api/coordinates',
+      unvisited: 'GET /api/coordinates/status/unvisited',
+      pending: 'GET /api/coordinates/status/pending',
+      markVisited: 'PATCH /api/coordinates/:id/visited',
+      markDelivered: 'PATCH /api/coordinates/:id/delivered',
     },
   });
 });
 
 app.use('/api/coordinates', coordinatesRouter);
-app.use('/api/telemetry', telemetryRouter);
-app.use('/api/commands', commandsRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

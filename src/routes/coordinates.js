@@ -6,20 +6,35 @@ const router = express.Router();
 // POST - Store new coordinates detected by drone
 router.post('/', async (req, res) => {
   try {
-    const { latitude, longitude } = req.body;
+    const { latitude, longitude, altitude, timestamp } = req.body;
     
     if (latitude === undefined || longitude === undefined) {
       return res.status(400).json({ 
         error: 'Latitude and longitude are required',
-        example: { latitude: 37.7749, longitude: -122.4194 }
+        example: { 
+          latitude: 37.7749, 
+          longitude: -122.4194,
+          altitude: 100.5,
+          timestamp: "2026-01-13T10:30:00.000Z"
+        }
       });
     }
     
+    const data = {
+      latitude: parseFloat(latitude),
+      longitude: parseFloat(longitude),
+    };
+    
+    // Add optional fields if provided
+    if (altitude !== undefined) {
+      data.altitude = parseFloat(altitude);
+    }
+    if (timestamp) {
+      data.timestamp = new Date(timestamp);
+    }
+    
     const coordinates = await prisma.coordinates.create({
-      data: {
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
-      },
+      data,
     });
     
     res.status(201).json({
@@ -204,6 +219,88 @@ router.get('/status/pending', async (req, res) => {
     console.error('Error fetching pending deliveries:', error);
     res.status(500).json({ 
       error: 'Failed to fetch pending deliveries',
+      details: error.message 
+    });
+  }
+});
+
+// POST - Trigger upload of batch coordinates from Raspberry Pi
+router.post('/trigger-upload', async (req, res) => {
+  try {
+    const { coordinates } = req.body;
+    
+    if (!coordinates || !Array.isArray(coordinates)) {
+      return res.status(400).json({ 
+        error: 'coordinates array is required',
+        example: { 
+          coordinates: [
+            { 
+              latitude: 37.7749, 
+              longitude: -122.4194,
+              altitude: 100.5,
+              timestamp: "2026-01-13T10:30:00.000Z"
+            }
+          ]
+        }
+      });
+    }
+    
+    if (coordinates.length === 0) {
+      return res.status(400).json({ 
+        error: 'coordinates array cannot be empty'
+      });
+    }
+    
+    // Validate and prepare data for batch insert
+    const validCoordinates = [];
+    const errors = [];
+    
+    coordinates.forEach((coord, index) => {
+      if (coord.latitude === undefined || coord.longitude === undefined) {
+        errors.push(`Item ${index}: latitude and longitude are required`);
+        return;
+      }
+      
+      const data = {
+        latitude: parseFloat(coord.latitude),
+        longitude: parseFloat(coord.longitude),
+      };
+      
+      // Add optional fields if provided
+      if (coord.altitude !== undefined) {
+        data.altitude = parseFloat(coord.altitude);
+      }
+      if (coord.timestamp) {
+        data.timestamp = new Date(coord.timestamp);
+      }
+      
+      validCoordinates.push(data);
+    });
+    
+    if (errors.length > 0) {
+      return res.status(400).json({ 
+        error: 'Validation failed',
+        details: errors
+      });
+    }
+    
+    // Batch insert all coordinates
+    const result = await prisma.coordinates.createMany({
+      data: validCoordinates,
+      skipDuplicates: true, // Skip if duplicate exists
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: 'Batch coordinates uploaded successfully',
+      inserted: result.count,
+      total_sent: coordinates.length
+    });
+    
+  } catch (error) {
+    console.error('Error uploading batch coordinates:', error);
+    res.status(500).json({ 
+      error: 'Failed to upload batch coordinates',
       details: error.message 
     });
   }

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drone GPS Trigger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .status-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .status-label {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .status-value {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .status-value.active {
+            color: #10b981;
+        }
+        
+        button {
+            width: 100%;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+        
+        .capture-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .capture-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .capture-btn:active {
+            transform: translateY(0);
+        }
+        
+        .capture-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .refresh-btn {
+            background: #f3f4f6;
+            color: #667eea;
+            font-size: 14px;
+            padding: 12px;
+        }
+        
+        .refresh-btn:hover {
+            background: #e5e7eb;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        
+        .loading {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .coordinates {
+            font-family: 'Courier New', monospace;
+            background: #1f2937;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚁 Drone GPS Capture</h1>
+        <p class="subtitle">Click to send current GPS coordinates</p>
+        
+        <div class="status-box">
+            <div class="status-item">
+                <span class="status-label">Raspberry Pi:</span>
+                <span class="status-value" id="raspiStatus">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">GPS Buffer:</span>
+                <span class="status-value" id="bufferSize">-</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Latest GPS:</span>
+                <span class="status-value" id="latestTime">-</span>
+            </div>
+        </div>
+        
+        <button class="capture-btn" id="captureBtn" onclick="sendCoordinate()">
+            📍 Capture & Send GPS
+        </button>
+        
+        <button class="refresh-btn" onclick="checkStatus()">
+            🔄 Refresh Status
+        </button>
+        
+        <div id="messageArea"></div>
+    </div>
+
+    <script>
+        // Configuration
+        const RASPI_IP = '192.168.1.100';  // ⚠️ CHANGE THIS to your Raspberry Pi's IP
+        const RASPI_PORT = '5000';
+        const RASPI_URL = `http://${RASPI_IP}:${RASPI_PORT}`;
+
+        // Check status on load
+        window.addEventListener('load', checkStatus);
+
+        async function checkStatus() {
+            try {
+                showMessage('Checking Raspberry Pi status...', 'loading');
+                
+                const response = await fetch(`${RASPI_URL}/api/status`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('raspiStatus').textContent = '✓ Connected';
+                    document.getElementById('raspiStatus').classList.add('active');
+                    document.getElementById('bufferSize').textContent = `${data.buffer_size} readings`;
+                    
+                    if (data.latest_reading) {
+                        const time = new Date(data.latest_reading).toLocaleTimeString();
+                        document.getElementById('latestTime').textContent = time;
+                    }
+                    
+                    if (data.buffer_size > 0) {
+                        document.getElementById('captureBtn').disabled = false;
+                        clearMessage();
+                    } else {
+                        showMessage('Waiting for GPS data...', 'loading');
+                        document.getElementById('captureBtn').disabled = true;
+                    }
+                } else {
+                    throw new Error('Status check failed');
+                }
+            } catch (error) {
+                document.getElementById('raspiStatus').textContent = '✗ Disconnected';
+                document.getElementById('raspiStatus').classList.remove('active');
+                showMessage('Cannot connect to Raspberry Pi. Check IP address and network.', 'error');
+                document.getElementById('captureBtn').disabled = true;
+            }
+        }
+
+        async function sendCoordinate() {
+            const btn = document.getElementById('captureBtn');
+            btn.disabled = true;
+            
+            try {
+                showMessage('📡 Sending GPS coordinate to server...', 'loading');
+                
+                // Record button click time
+                const clickTime = new Date().toISOString();
+                
+                // Call Raspberry Pi API to send coordinate
+                const response = await fetch(`${RASPI_URL}/api/send-latest`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        button_clicked_at: clickTime
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('✅ GPS coordinate sent successfully!', 'success');
+                    
+                    // Show coordinate info if available
+                    if (data.coordinate) {
+                        const coordDiv = document.createElement('div');
+                        coordDiv.className = 'coordinates';
+                        coordDiv.innerHTML = `
+                            Latitude: ${data.coordinate.latitude}<br>
+                            Longitude: ${data.coordinate.longitude}<br>
+                            Altitude: ${data.coordinate.altitude}m<br>
+                            Time: ${new Date(data.coordinate.timestamp).toLocaleString()}
+                        `;
+                        document.getElementById('messageArea').appendChild(coordDiv);
+                    }
+                    
+                    // Refresh status after 1 second
+                    setTimeout(checkStatus, 1000);
+                } else {
+                    throw new Error(data.error || 'Failed to send coordinate');
+                }
+            } catch (error) {
+                showMessage(`❌ Error: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function showMessage(text, type) {
+            const messageArea = document.getElementById('messageArea');
+            messageArea.innerHTML = `<div class="message ${type}">${text}</div>`;
+        }
+
+        function clearMessage() {
+            document.getElementById('messageArea').innerHTML = '';
+        }
+
+        // Auto-refresh status every 5 seconds
+        setInterval(checkStatus, 5000);
+    </script>
+</body>
+</html>
