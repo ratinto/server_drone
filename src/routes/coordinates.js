@@ -156,12 +156,13 @@ router.post('/trigger-upload', async (req, res) => {
     const targetTime = new Date(timestamp);
     
     // Find the log entry that matches or is closest to the timestamp
-    // Looking for logs within 1 second of the button click (±1 second)
-    const timeWindow = 1000; // 1 second in milliseconds
+    // Looking for logs within 5 seconds of the button click for more flexibility
+    const timeWindow = 5000; // 5 seconds in milliseconds
     const startTime = new Date(targetTime.getTime() - timeWindow);
     const endTime = new Date(targetTime.getTime() + timeWindow);
     
-    const matchingLog = await prisma.coordinateLogs.findFirst({
+    // First try to find within the time window
+    let matchingLog = await prisma.coordinateLogs.findFirst({
       where: {
         timestamp: {
           gte: startTime,
@@ -173,11 +174,20 @@ router.post('/trigger-upload', async (req, res) => {
       }
     });
     
+    // If no match found in time window, get the absolute latest log
     if (!matchingLog) {
-      return res.status(404).json({ 
-        error: 'No log found matching the timestamp',
-        details: `Searched between ${startTime.toISOString()} and ${endTime.toISOString()}`
+      matchingLog = await prisma.coordinateLogs.findFirst({
+        orderBy: {
+          timestamp: 'desc'
+        }
       });
+      
+      if (!matchingLog) {
+        return res.status(404).json({ 
+          error: 'No logs found in database',
+          details: 'Please ensure GPS coordinate sender is running and sending data to /api/logs'
+        });
+      }
     }
     
     // Copy the log data to coordinates table
@@ -198,7 +208,8 @@ router.post('/trigger-upload', async (req, res) => {
       success: true,
       message: 'Coordinate copied from log successfully',
       data: newCoordinate,
-      source_log_id: matchingLog.id
+      source_log_id: matchingLog.id,
+      time_difference: Math.abs(new Date(matchingLog.timestamp) - targetTime) / 1000 // in seconds
     });
     
   } catch (error) {
