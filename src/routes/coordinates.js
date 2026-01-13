@@ -86,91 +86,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET - Get single coordinate by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const coordinates = await prisma.coordinates.findUnique({
-      where: { id: parseInt(id) },
-    });
-    
-    if (!coordinates) {
-      return res.status(404).json({ 
-        error: 'Coordinates not found' 
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: coordinates
-    });
-  } catch (error) {
-    console.error('Error fetching coordinate:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch coordinate',
-      details: error.message 
-    });
-  }
-});
-
-// PATCH - Mark coordinate as visited
-router.patch('/:id/visited', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const coordinates = await prisma.coordinates.update({
-      where: { id: parseInt(id) },
-      data: { isVisited: true },
-    });
-    
-    res.json({
-      success: true,
-      message: 'Coordinate marked as visited',
-      data: coordinates
-    });
-  } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Coordinates not found' });
-    }
-    console.error('Error updating coordinate:', error);
-    res.status(500).json({ 
-      error: 'Failed to update coordinate',
-      details: error.message 
-    });
-  }
-});
-
-// PATCH - Mark coordinate as delivered
-router.patch('/:id/delivered', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const coordinates = await prisma.coordinates.update({
-      where: { id: parseInt(id) },
-      data: { 
-        isDelivered: true,
-        isVisited: true  // Automatically mark as visited when delivered
-      },
-    });
-    
-    res.json({
-      success: true,
-      message: 'Coordinate marked as delivered',
-      data: coordinates
-    });
-  } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Coordinates not found' });
-    }
-    console.error('Error updating coordinate:', error);
-    res.status(500).json({ 
-      error: 'Failed to update coordinate',
-      details: error.message 
-    });
-  }
-});
-
 // GET - Get unvisited coordinates (for drones to fetch next target)
 router.get('/status/unvisited', async (req, res) => {
   try {
@@ -290,6 +205,91 @@ router.post('/trigger-upload', async (req, res) => {
     console.error('Error in trigger-upload:', error);
     res.status(500).json({ 
       error: 'Failed to process trigger upload',
+      details: error.message 
+    });
+  }
+});
+
+// GET - Get single coordinate by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const coordinates = await prisma.coordinates.findUnique({
+      where: { id: parseInt(id) },
+    });
+    
+    if (!coordinates) {
+      return res.status(404).json({ 
+        error: 'Coordinates not found' 
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: coordinates
+    });
+  } catch (error) {
+    console.error('Error fetching coordinate:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch coordinate',
+      details: error.message 
+    });
+  }
+});
+
+// PATCH - Mark coordinate as visited
+router.patch('/:id/visited', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const coordinates = await prisma.coordinates.update({
+      where: { id: parseInt(id) },
+      data: { isVisited: true },
+    });
+    
+    res.json({
+      success: true,
+      message: 'Coordinate marked as visited',
+      data: coordinates
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Coordinates not found' });
+    }
+    console.error('Error updating coordinate:', error);
+    res.status(500).json({ 
+      error: 'Failed to update coordinate',
+      details: error.message 
+    });
+  }
+});
+
+// PATCH - Mark coordinate as delivered
+router.patch('/:id/delivered', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const coordinates = await prisma.coordinates.update({
+      where: { id: parseInt(id) },
+      data: { 
+        isDelivered: true,
+        isVisited: true  // Automatically mark as visited when delivered
+      },
+    });
+    
+    res.json({
+      success: true,
+      message: 'Coordinate marked as delivered',
+      data: coordinates
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Coordinates not found' });
+    }
+    console.error('Error updating coordinate:', error);
+    res.status(500).json({ 
+      error: 'Failed to update coordinate',
       details: error.message 
     });
   }
