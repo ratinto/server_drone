@@ -224,83 +224,70 @@ router.get('/status/pending', async (req, res) => {
   }
 });
 
-// POST - Trigger upload of batch coordinates from Raspberry Pi
+// POST - Trigger upload: Find log by timestamp and copy to coordinates
 router.post('/trigger-upload', async (req, res) => {
   try {
-    const { coordinates } = req.body;
+    const { timestamp } = req.body;
     
-    if (!coordinates || !Array.isArray(coordinates)) {
+    if (!timestamp) {
       return res.status(400).json({ 
-        error: 'coordinates array is required',
+        error: 'timestamp is required',
         example: { 
-          coordinates: [
-            { 
-              latitude: 37.7749, 
-              longitude: -122.4194,
-              altitude: 100.5,
-              timestamp: "2026-01-13T10:30:00.000Z"
-            }
-          ]
+          timestamp: "2026-01-13T10:30:00.000Z"
         }
       });
     }
     
-    if (coordinates.length === 0) {
-      return res.status(400).json({ 
-        error: 'coordinates array cannot be empty'
-      });
-    }
+    const targetTime = new Date(timestamp);
     
-    // Validate and prepare data for batch insert
-    const validCoordinates = [];
-    const errors = [];
+    // Find the log entry that matches or is closest to the timestamp
+    // Looking for logs within 5 seconds of the button click
+    const timeWindow = 5000; // 5 seconds in milliseconds
+    const startTime = new Date(targetTime.getTime() - timeWindow);
+    const endTime = new Date(targetTime.getTime() + timeWindow);
     
-    coordinates.forEach((coord, index) => {
-      if (coord.latitude === undefined || coord.longitude === undefined) {
-        errors.push(`Item ${index}: latitude and longitude are required`);
-        return;
+    const matchingLog = await prisma.coordinateLogs.findFirst({
+      where: {
+        timestamp: {
+          gte: startTime,
+          lte: endTime
+        }
+      },
+      orderBy: {
+        timestamp: 'desc' // Get the most recent one
       }
-      
-      const data = {
-        latitude: parseFloat(coord.latitude),
-        longitude: parseFloat(coord.longitude),
-      };
-      
-      // Add optional fields if provided
-      if (coord.altitude !== undefined) {
-        data.altitude = parseFloat(coord.altitude);
-      }
-      if (coord.timestamp) {
-        data.timestamp = new Date(coord.timestamp);
-      }
-      
-      validCoordinates.push(data);
     });
     
-    if (errors.length > 0) {
-      return res.status(400).json({ 
-        error: 'Validation failed',
-        details: errors
+    if (!matchingLog) {
+      return res.status(404).json({ 
+        error: 'No log found matching the timestamp',
+        details: `Searched between ${startTime.toISOString()} and ${endTime.toISOString()}`
       });
     }
     
-    // Batch insert all coordinates
-    const result = await prisma.coordinates.createMany({
-      data: validCoordinates,
-      skipDuplicates: true, // Skip if duplicate exists
+    // Copy the log data to coordinates table
+    const newCoordinate = await prisma.coordinates.create({
+      data: {
+        latitude: matchingLog.latitude,
+        longitude: matchingLog.longitude,
+        altitude: matchingLog.altitude,
+        timestamp: matchingLog.timestamp,
+        isVisited: false,
+        isDelivered: false
+      }
     });
     
     res.status(201).json({
       success: true,
-      message: 'Batch coordinates uploaded successfully',
-      inserted: result.count,
-      total_sent: coordinates.length
+      message: 'Coordinate copied from log successfully',
+      data: newCoordinate,
+      source_log_id: matchingLog.id
     });
     
   } catch (error) {
-    console.error('Error uploading batch coordinates:', error);
+    console.error('Error in trigger-upload:', error);
     res.status(500).json({ 
-      error: 'Failed to upload batch coordinates',
+      error: 'Failed to process trigger upload',
       details: error.message 
     });
   }

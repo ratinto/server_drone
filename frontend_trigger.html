@@ -198,96 +198,63 @@
 
     <script>
         // Configuration
-        const RASPI_IP = '192.168.1.100';  // ⚠️ CHANGE THIS to your Raspberry Pi's IP
-        const RASPI_PORT = '5000';
-        const RASPI_URL = `http://${RASPI_IP}:${RASPI_PORT}`;
+        const API_URL = 'https://server-drone.vercel.app/api/coordinates/trigger-upload';
 
-        // Check status on load
-        window.addEventListener('load', checkStatus);
-
-        async function checkStatus() {
-            try {
-                showMessage('Checking Raspberry Pi status...', 'loading');
-                
-                const response = await fetch(`${RASPI_URL}/api/status`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    document.getElementById('raspiStatus').textContent = '✓ Connected';
-                    document.getElementById('raspiStatus').classList.add('active');
-                    document.getElementById('bufferSize').textContent = `${data.buffer_size} readings`;
-                    
-                    if (data.latest_reading) {
-                        const time = new Date(data.latest_reading).toLocaleTimeString();
-                        document.getElementById('latestTime').textContent = time;
-                    }
-                    
-                    if (data.buffer_size > 0) {
-                        document.getElementById('captureBtn').disabled = false;
-                        clearMessage();
-                    } else {
-                        showMessage('Waiting for GPS data...', 'loading');
-                        document.getElementById('captureBtn').disabled = true;
-                    }
-                } else {
-                    throw new Error('Status check failed');
-                }
-            } catch (error) {
-                document.getElementById('raspiStatus').textContent = '✗ Disconnected';
-                document.getElementById('raspiStatus').classList.remove('active');
-                showMessage('Cannot connect to Raspberry Pi. Check IP address and network.', 'error');
-                document.getElementById('captureBtn').disabled = true;
-            }
-        }
+        // Hide status on load since we don't need it
+        window.addEventListener('load', () => {
+            document.querySelector('.status-box').style.display = 'none';
+            document.querySelector('.refresh-btn').style.display = 'none';
+        });
 
         async function sendCoordinate() {
             const btn = document.getElementById('captureBtn');
             btn.disabled = true;
             
             try {
-                showMessage('📡 Sending GPS coordinate to server...', 'loading');
+                showMessage('📡 Finding matching coordinate in logs...', 'loading');
                 
-                // Record button click time
-                const clickTime = new Date().toISOString();
+                // Record the exact timestamp when button is clicked
+                const clickTimestamp = new Date().toISOString();
                 
-                // Call Raspberry Pi API to send coordinate
-                const response = await fetch(`${RASPI_URL}/api/send-latest`, {
+                // Send timestamp to trigger-upload endpoint
+                // It will find the matching log entry and copy to coordinates
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        button_clicked_at: clickTime
+                        timestamp: clickTimestamp
                     })
                 });
                 
                 const data = await response.json();
                 
-                if (data.success) {
-                    showMessage('✅ GPS coordinate sent successfully!', 'success');
+                if (response.ok) {
+                    showMessage(`✅ Success! Coordinate captured from logs`, 'success');
                     
-                    // Show coordinate info if available
-                    if (data.coordinate) {
+                    // Show the captured coordinate info
+                    if (data.data) {
                         const coordDiv = document.createElement('div');
                         coordDiv.className = 'coordinates';
                         coordDiv.innerHTML = `
-                            Latitude: ${data.coordinate.latitude}<br>
-                            Longitude: ${data.coordinate.longitude}<br>
-                            Altitude: ${data.coordinate.altitude}m<br>
-                            Time: ${new Date(data.coordinate.timestamp).toLocaleString()}
+                            Latitude: ${data.data.latitude.toFixed(6)}<br>
+                            Longitude: ${data.data.longitude.toFixed(6)}<br>
+                            Altitude: ${data.data.altitude ? data.data.altitude.toFixed(2) + 'm' : 'N/A'}<br>
+                            Log Time: ${new Date(data.data.timestamp).toLocaleString()}<br>
+                            Log ID: ${data.source_log_id}
                         `;
                         document.getElementById('messageArea').appendChild(coordDiv);
                     }
-                    
-                    // Refresh status after 1 second
-                    setTimeout(checkStatus, 1000);
                 } else {
-                    throw new Error(data.error || 'Failed to send coordinate');
+                    throw new Error(data.error || 'Failed to capture coordinate');
                 }
             } catch (error) {
                 showMessage(`❌ Error: ${error.message}`, 'error');
             } finally {
-                btn.disabled = false;
+                setTimeout(() => {
+                    btn.disabled = false;
+                }, 1000);
             }
         }
 
@@ -295,13 +262,6 @@
             const messageArea = document.getElementById('messageArea');
             messageArea.innerHTML = `<div class="message ${type}">${text}</div>`;
         }
-
-        function clearMessage() {
-            document.getElementById('messageArea').innerHTML = '';
-        }
-
-        // Auto-refresh status every 5 seconds
-        setInterval(checkStatus, 5000);
     </script>
 </body>
 </html>
