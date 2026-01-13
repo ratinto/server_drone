@@ -326,57 +326,55 @@ class RaspiGPSSender:
         self.log("✅ Shutdown complete", "SUCCESS")
 
 
+def auto_detect_device():
+    """Auto-detect Pixhawk device"""
+    # Common Pixhawk device paths
+    possible_devices = [
+        '/dev/ttyACM0',
+        '/dev/ttyACM1',
+        '/dev/ttyUSB0',
+        '/dev/ttyUSB1',
+        'tcp:127.0.0.1:5760',  # SITL default
+        '/dev/serial0'
+    ]
+    
+    for device in possible_devices:
+        if device.startswith('tcp:'):
+            return device  # Always try TCP if nothing else found
+        if os.path.exists(device):
+            return device
+    
+    # Default to TCP SITL if nothing found
+    return 'tcp:127.0.0.1:5760'
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Raspberry Pi GPS Sender for Pixhawk',
+        description='Raspberry Pi GPS Sender for Pixhawk - Just run it!',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Examples:
-  USB Connection (most common):
-    python3 raspi_gps_sender.py --connect /dev/ttyACM0 --drone-id raspi_drone_01
-    
-  Serial GPIO Connection:
-    python3 raspi_gps_sender.py --connect /dev/serial0 --baud 57600 --drone-id raspi_drone_01
-    
-  USB with verbose logging:
-    python3 raspi_gps_sender.py --connect /dev/ttyACM0 --drone-id raspi_drone_01 --verbose
-    
-  Custom API endpoint:
-    python3 raspi_gps_sender.py --connect /dev/ttyACM0 --drone-id raspi_drone_01 --api-url https://your-api.com/api/logs
+Quick Start:
+  python3 raspi_gps_sender.py                    # Auto-detect device and run
+  python3 raspi_gps_sender.py --verbose          # Run with debug output
 
-Systemd Service Setup:
-  1. Create service file: sudo nano /etc/systemd/system/gps-sender.service
-  2. Add content:
-     [Unit]
-     Description=GPS Coordinate Sender
-     After=network-online.target
-     Wants=network-online.target
-     
-     [Service]
-     Type=simple
-     User=pi
-     WorkingDirectory=/home/pi
-     ExecStart=/usr/bin/python3 /usr/local/bin/raspi_gps_sender.py --connect /dev/ttyACM0 --drone-id raspi_drone_01
-     Restart=always
-     RestartSec=10
-     
-     [Install]
-     WantedBy=multi-user.target
-  
-  3. Enable and start:
-     sudo systemctl daemon-reload
-     sudo systemctl enable gps-sender
-     sudo systemctl start gps-sender
-     sudo systemctl status gps-sender
+Advanced Usage:
+  python3 raspi_gps_sender.py --connect /dev/ttyACM0 --drone-id my_drone
+  python3 raspi_gps_sender.py --connect tcp:127.0.0.1:5760  # For SITL simulation
+
+The script will automatically:
+  - Detect Pixhawk device (/dev/ttyACM0, /dev/ttyUSB0, or SITL)
+  - Generate a drone ID based on hostname
+  - Connect to https://server-drone.vercel.app/api/logs
+  - Send GPS data every 0.5 seconds
         """
     )
     
-    parser.add_argument('--connect', required=True,
-                        help='Connection string (e.g., /dev/ttyACM0, /dev/serial0)')
+    parser.add_argument('--connect', 
+                        help='Connection string (default: auto-detect)')
     parser.add_argument('--baud', type=int, default=57600,
                         help='Baud rate for serial (default: 57600)')
-    parser.add_argument('--drone-id', required=True,
-                        help='Drone identifier (e.g., raspi_drone_01)')
+    parser.add_argument('--drone-id',
+                        help='Drone identifier (default: hostname)')
     parser.add_argument('--api-url', default='https://server-drone.vercel.app/api/logs',
                         help='Backend API URL')
     parser.add_argument('--interval', type=float, default=0.5,
@@ -385,6 +383,18 @@ Systemd Service Setup:
                         help='Enable verbose logging')
     
     args = parser.parse_args()
+    
+    # Auto-detect connection if not specified
+    if not args.connect:
+        args.connect = auto_detect_device()
+        print(f"🔍 Auto-detected device: {args.connect}")
+    
+    # Auto-generate drone ID if not specified
+    if not args.drone_id:
+        import socket
+        hostname = socket.gethostname()
+        args.drone_id = f"drone_{hostname}".replace('.', '_').replace(' ', '_')
+        print(f"🏷️  Auto-generated Drone ID: {args.drone_id}")
     
     # Create and run sender
     sender = RaspiGPSSender(
