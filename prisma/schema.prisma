@@ -25,3 +25,16 @@ model Coordinates {
   @@index([timestamp])
 }
 
+model CoordinateLogs {
+  id          Int      @id @default(autoincrement())
+  latitude    Float
+  longitude   Float
+  altitude    Float?   // Optional altitude from Pixhawk
+  heading     Float?   // Heading in degrees
+  speed       Float?   // Speed in m/s
+  timestamp   DateTime // Actual timestamp from Pixhawk GPS log
+  createdAt   DateTime @default(now())
+  
+  @@index([timestamp])
+  @@index([createdAt])
+}

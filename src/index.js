@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import coordinatesRouter from './routes/coordinates.js';
+import coordinateLogsRouter from './routes/coordinateLogs.js';
 
 dotenv.config();
 
@@ -20,18 +21,29 @@ app.get('/', (req, res) => {
     description: 'Manages coordinates for drone detection and delivery system with GPS batch upload support',
     production_url: 'https://server-drone.vercel.app',
     endpoints: {
-      createCoordinate: 'POST /api/coordinates',
-      batchUpload: 'POST /api/coordinates/trigger-upload (For Raspberry Pi)',
-      allCoordinates: 'GET /api/coordinates',
-      unvisited: 'GET /api/coordinates/status/unvisited',
-      pending: 'GET /api/coordinates/status/pending',
-      markVisited: 'PATCH /api/coordinates/:id/visited',
-      markDelivered: 'PATCH /api/coordinates/:id/delivered',
+      coordinates: {
+        createCoordinate: 'POST /api/coordinates',
+        batchUpload: 'POST /api/coordinates/trigger-upload (For Raspberry Pi)',
+        allCoordinates: 'GET /api/coordinates',
+        unvisited: 'GET /api/coordinates/status/unvisited',
+        pending: 'GET /api/coordinates/status/pending',
+        markVisited: 'PATCH /api/coordinates/:id/visited',
+        markDelivered: 'PATCH /api/coordinates/:id/delivered',
+      },
+      coordinateLogs: {
+        createLog: 'POST /api/logs',
+        batchUpload: 'POST /api/logs/batch',
+        allLogs: 'GET /api/logs',
+        logsByRange: 'GET /api/logs/range?startTime=<ISO>&endTime=<ISO>',
+        latestLog: 'GET /api/logs/latest',
+        statistics: 'GET /api/logs/stats/summary',
+      },
     },
   });
 });
 
 app.use('/api/coordinates', coordinatesRouter);
+app.use('/api/logs', coordinateLogsRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
