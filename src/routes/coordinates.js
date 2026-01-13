@@ -271,6 +271,8 @@ router.post('/trigger-upload', async (req, res) => {
         latitude: matchingLog.latitude,
         longitude: matchingLog.longitude,
         altitude: matchingLog.altitude,
+        heading: matchingLog.heading,
+        speed: matchingLog.speed,
         timestamp: matchingLog.timestamp,
         isVisited: false,
         isDelivered: false

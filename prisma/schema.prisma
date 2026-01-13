@@ -16,6 +16,8 @@ model Coordinates {
   latitude    Float
   longitude   Float
   altitude    Float?   // Optional altitude from Pixhawk
+  heading     Float?   // Heading in degrees
+  speed       Float?   // Speed in m/s
   timestamp   DateTime @default(now()) // Actual timestamp from Pixhawk GPS
   isVisited   Boolean  @default(false)
   isDelivered Boolean  @default(false)

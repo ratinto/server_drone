@@ -241,6 +241,8 @@
                             Latitude: ${data.data.latitude.toFixed(6)}<br>
                             Longitude: ${data.data.longitude.toFixed(6)}<br>
                             Altitude: ${data.data.altitude ? data.data.altitude.toFixed(2) + 'm' : 'N/A'}<br>
+                            Heading: ${data.data.heading ? data.data.heading + '°' : 'N/A'}<br>
+                            Speed: ${data.data.speed ? data.data.speed.toFixed(2) + ' m/s' : 'N/A'}<br>
                             Log Time: ${new Date(data.data.timestamp).toLocaleString()}<br>
                             Log ID: ${data.source_log_id}
                         `;
