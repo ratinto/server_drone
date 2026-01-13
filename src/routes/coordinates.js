@@ -241,8 +241,8 @@ router.post('/trigger-upload', async (req, res) => {
     const targetTime = new Date(timestamp);
     
     // Find the log entry that matches or is closest to the timestamp
-    // Looking for logs within 5 seconds of the button click
-    const timeWindow = 5000; // 5 seconds in milliseconds
+    // Looking for logs within 1 second of the button click (±1 second)
+    const timeWindow = 1000; // 1 second in milliseconds
     const startTime = new Date(targetTime.getTime() - timeWindow);
     const endTime = new Date(targetTime.getTime() + timeWindow);
     
