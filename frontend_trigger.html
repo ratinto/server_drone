@@ -216,6 +216,9 @@
                 // Record the exact timestamp when button is clicked
                 const clickTimestamp = new Date().toISOString();
                 
+                console.log('Sending to:', API_URL);
+                console.log('Timestamp:', clickTimestamp);
+                
                 // Send timestamp to trigger-upload endpoint
                 // It will find the matching log entry and copy to coordinates
                 const response = await fetch(API_URL, {
@@ -225,10 +228,14 @@
                     },
                     body: JSON.stringify({
                         timestamp: clickTimestamp
-                    })
+                    }),
+                    cache: 'no-cache'  // Prevent caching
                 });
                 
+                console.log('Response status:', response.status);
+                
                 const data = await response.json();
+                console.log('Response data:', data);
                 
                 if (response.ok) {
                     showMessage(`✅ Success! Coordinate captured from logs`, 'success');
@@ -249,9 +256,13 @@
                         document.getElementById('messageArea').appendChild(coordDiv);
                     }
                 } else {
-                    throw new Error(data.error || 'Failed to capture coordinate');
+                    // Show more detailed error
+                    const errorMsg = data.error || 'Failed to capture coordinate';
+                    const details = data.details ? `\n${data.details}` : '';
+                    throw new Error(errorMsg + details);
                 }
             } catch (error) {
+                console.error('Full error:', error);
                 showMessage(`❌ Error: ${error.message}`, 'error');
             } finally {
                 setTimeout(() => {
